@@ -381,6 +381,7 @@ public class MainWindow : Form
     }
 
     
+    
     private void ApplyHostStatusLayout()
     {
         if (this.hostStatus == null || this.buttonLoopback == null)
@@ -576,9 +577,46 @@ public class MainWindow : Form
         LaunchGame("MULTIPLAYER", exe);
     }
 
+    
+    
     private void StartDedi_Click(object? sender, EventArgs e)
     {
-        LaunchDedicated();
+        try
+        {
+            EnsureHostMode();
+
+            string? exePath = FindMpExe();
+            if (string.IsNullOrWhiteSpace(exePath))
+            {
+                MessageBox.Show("Could not find the multiplayer executable.", "Launcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            WriteConfig("Multiplayer", true);
+
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string mainDir = Path.Combine(baseDir, "main");
+            string cfgName = "";
+
+            if (File.Exists(Path.Combine(mainDir, "bgserver.cfg")))
+                cfgName = "bgserver.cfg";
+            else if (File.Exists(Path.Combine(mainDir, "server.cfg")))
+                cfgName = "server.cfg";
+            else
+            {
+                MessageBox.Show("Server.cfg not found", "Launcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            currentGame = Process.Start(exePath, $"+set dedicated 2 +set sv_licensenum 0 +set net_port 27960 +exec {cfgName}");
+
+            if (currentGame != null)
+                processWatch.Start();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Launcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void Loopback_Click(object? sender, EventArgs e)
@@ -728,6 +766,7 @@ public class MainWindow : Form
         this.buttonTray.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         this.buttonTray.TabStop = false;
         this.buttonTray.Click += (s, e) => ShowInTray();
+        this.buttonTray.Cursor = Cursors.Help;
         this.trayToolTip.SetToolTip(this.buttonTray, "Minimize to tray");
         this.buttonTray.MouseEnter += (s, e) => this.trayToolTip.Show("Minimize to tray", this.buttonTray, 0, this.buttonTray.Height + 2, 2000);
         this.buttonTray.MouseLeave += (s, e) => this.trayToolTip.Hide(this.buttonTray);
@@ -985,6 +1024,7 @@ private int StableInt32FromString(string s)
         
         
     
+    
     private void UpdateResponsiveLayout()
     {
         try
@@ -1024,7 +1064,7 @@ private int StableInt32FromString(string s)
                 int gap = veryTiny ? 6 : tiny ? 8 : compact ? 10 : 12;
                 int bottomMargin = veryTiny ? 6 : tiny ? 8 : compact ? 10 : 12;
                 int available = this.card.Width - 28;
-                int h = veryTiny ? 34 : tiny ? 38 : compact ? 42 : 46;
+                int h = veryTiny ? 40 : tiny ? 45 : compact ? 55 : 65;
                 int w = Math.Min(160, Math.Max(90, (available - 2 * gap) / 3));
                 int rowWidth = w * 3 + gap * 2;
                 int left = Math.Max(14, (this.card.Width - rowWidth) / 2);
@@ -1042,10 +1082,6 @@ private int StableInt32FromString(string s)
                 this.startSP.Font = f;
                 this.startMP.Font = f;
                 this.startDedi.Font = f;
-
-                this.startSP.Padding = new Padding(0);
-                this.startMP.Padding = new Padding(0);
-                this.startDedi.Padding = new Padding(0);
             }
         }
         catch { }
