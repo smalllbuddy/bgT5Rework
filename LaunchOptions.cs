@@ -20,7 +20,7 @@ namespace bgT5Launcher
                 string a = (raw ?? "").Trim();
                 if (a.Length == 0) continue;
 
-                if (a.Equals("-zm", StringComparison.OrdinalIgnoreCase)) { o.Mode = "zm"; o.DirectLaunchRequested = true; }
+                if (a.Equals("-zm", StringComparison.OrdinalIgnoreCase) || a.Equals("-sp", StringComparison.OrdinalIgnoreCase)) { o.Mode = "zm"; o.DirectLaunchRequested = true; }
                 else if (a.Equals("-mp", StringComparison.OrdinalIgnoreCase)) { o.Mode = "mp"; o.DirectLaunchRequested = true; }
                 else if (a.Equals("-server", StringComparison.OrdinalIgnoreCase)) { o.Mode = "server"; o.DirectLaunchRequested = true; }
                 else if (a.Equals("-local", StringComparison.OrdinalIgnoreCase)) { o.HostKind = "local"; o.DirectLaunchRequested = true; }

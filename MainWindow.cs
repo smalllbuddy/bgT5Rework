@@ -225,6 +225,7 @@ namespace bgT5Launcher
         private NotifyIcon trayIcon;
         private bool startHiddenToTray;
         private bool isTrayMode;
+        private bool launchInProgress;
         private string launchedProcessName = "";
         private Icon launcherIcon;
 
@@ -290,6 +291,7 @@ namespace bgT5Launcher
                     if (this.startHiddenToTray)
                         HideToTray();
                 }
+                launchInProgress = false;
             };
         }
 
@@ -415,7 +417,7 @@ namespace bgT5Launcher
             title.AutoSize = true;
 
             subtitle = new Label();
-            subtitle.Text = "session bridge online // patched runtime preserved";
+            subtitle.Text = "session bridge online // reworked launcher for bgt5launcher v0.1.1";
             subtitle.ForeColor = Color.Gainsboro;
             subtitle.BackColor = Color.Transparent;
             subtitle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
@@ -695,6 +697,8 @@ namespace bgT5Launcher
 
         private void LaunchAndHide(long size, bool dedicated)
         {
+            if (launchInProgress) return;
+            launchInProgress = true;
             try
             {
                 StartHostmode();
@@ -731,25 +735,28 @@ namespace bgT5Launcher
                 MessageBox.Show(ex.Message, "Launcher error");
                 Logger.Log("Launch failed: " + ex);
             }
+            finally
+            {
+                var guardTimer = new Timer();
+                guardTimer.Interval = 1800;
+                guardTimer.Tick += (s, e) =>
+                {
+                    try { guardTimer.Stop(); guardTimer.Dispose(); } catch { }
+                    launchInProgress = false;
+                };
+                guardTimer.Start();
+            }
         }
 
         private void ShowLaunchOptions()
         {
             string text =
-@"Use these:
--zm
--mp
--server
-
--local    uses 127.0.0.1
--savedip  uses whatever is saved in Host IP
--<IP>     uses a specific IP
-
-Examples:
-bgT5Launcher.exe -zm -savedip
-bgT5Launcher.exe -zm -local
-bgT5Launcher.exe -mp -192.168.1.50
-bgT5Launcher.exe -server -savedip";
+@"Launch in campaign/zombie mode: -zm or -sp
+Launch in multiplayer mode: -mp
+Launch with specific IP: -savedip
+Launch with 127.0.0.1: -local
+Launch with a specific IP: -<IP> where <IP> is the IP
+Launch dedicated server: -server";
 
             try { Clipboard.SetText(text); } catch { }
             MessageBox.Show(text, "Launch options");

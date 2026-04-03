@@ -1,8 +1,8 @@
-C:\Users\Spencer\Downloads\bgT5Launcher_v34\bin\Debug\net48\bgT5Launcher.exe.config
-C:\Users\Spencer\Downloads\bgT5Launcher_v34\bin\Debug\net48\bgT5Launcher.exe
-C:\Users\Spencer\Downloads\bgT5Launcher_v34\bin\Debug\net48\bgT5Launcher.pdb
-C:\Users\Spencer\Downloads\bgT5Launcher_v34\obj\Debug\net48\bgT5Launcher.csproj.AssemblyReference.cache
-C:\Users\Spencer\Downloads\bgT5Launcher_v34\obj\Debug\net48\bgT5Launcher.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\Spencer\Downloads\bgT5Launcher_v34\obj\Debug\net48\bgT5Launcher.csproj.CoreCompileInputs.cache
-C:\Users\Spencer\Downloads\bgT5Launcher_v34\obj\Debug\net48\bgT5Launcher.exe
-C:\Users\Spencer\Downloads\bgT5Launcher_v34\obj\Debug\net48\bgT5Launcher.pdb
+C:\Users\Spencer\Downloads\bgT5Launcher_v35\bin\Debug\net48\bgT5Launcher.exe.config
+C:\Users\Spencer\Downloads\bgT5Launcher_v35\bin\Debug\net48\bgT5Launcher.exe
+C:\Users\Spencer\Downloads\bgT5Launcher_v35\bin\Debug\net48\bgT5Launcher.pdb
+C:\Users\Spencer\Downloads\bgT5Launcher_v35\obj\Debug\net48\bgT5Launcher.csproj.AssemblyReference.cache
+C:\Users\Spencer\Downloads\bgT5Launcher_v35\obj\Debug\net48\bgT5Launcher.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Spencer\Downloads\bgT5Launcher_v35\obj\Debug\net48\bgT5Launcher.csproj.CoreCompileInputs.cache
+C:\Users\Spencer\Downloads\bgT5Launcher_v35\obj\Debug\net48\bgT5Launcher.exe
+C:\Users\Spencer\Downloads\bgT5Launcher_v35\obj\Debug\net48\bgT5Launcher.pdb

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v34\\bgT5Launcher.csproj": {}
+    "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v35\\bgT5Launcher.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v34\\bgT5Launcher.csproj": {
+    "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v35\\bgT5Launcher.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v34\\bgT5Launcher.csproj",
+        "projectUniqueName": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v35\\bgT5Launcher.csproj",
         "projectName": "bgT5Launcher",
-        "projectPath": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v34\\bgT5Launcher.csproj",
+        "projectPath": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v35\\bgT5Launcher.csproj",
         "packagesPath": "C:\\Users\\Spencer\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v34\\obj\\",
+        "outputPath": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v35\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Spencer\\AppData\\Roaming\\NuGet\\NuGet.Config",
