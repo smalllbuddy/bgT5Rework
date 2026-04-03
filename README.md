@@ -12,7 +12,7 @@ This launcher fixes all 0.7 exclusive issues, and all issues that weren't fixed 
 
 # How?
 
-Just drag the exe file into either your 0.7 bgt5 black ops folder (recommended) or your 0.1.1 bgt5 black ops folder. This will replace one file, and you can launch everything using the new exe file.
+Just drag the exe file into either your 0.7 bgt5 black ops folder (recommended) or your 0.1.1 bgt5 black ops folder. This will replace one file, and you can launch everything using the new exe file. (See the youtube video for more help)
 
 # Fixes
 
