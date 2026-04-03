@@ -1,32 +1,32 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v35\\bgT5Launcher.csproj": {}
+    "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v3.2rc5\\bgt5launcher.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v35\\bgT5Launcher.csproj": {
+    "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v3.2rc5\\bgt5launcher.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v35\\bgT5Launcher.csproj",
+        "projectUniqueName": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v3.2rc5\\bgt5launcher.csproj",
         "projectName": "bgT5Launcher",
-        "projectPath": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v35\\bgT5Launcher.csproj",
+        "projectPath": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v3.2rc5\\bgt5launcher.csproj",
         "packagesPath": "C:\\Users\\Spencer\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v35\\obj\\",
+        "outputPath": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v3.2rc5\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Spencer\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
-          "net48"
+          "net461"
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "net48": {
-            "targetAlias": "net48",
+          "net461": {
+            "targetAlias": "net461",
             "projectReferences": {}
           }
         },
@@ -42,8 +42,16 @@
         }
       },
       "frameworks": {
-        "net48": {
-          "targetAlias": "net48",
+        "net461": {
+          "targetAlias": "net461",
+          "dependencies": {
+            "Microsoft.NETFramework.ReferenceAssemblies": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.0.3, )",
+              "autoReferenced": true
+            }
+          },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.204\\RuntimeIdentifierGraph.json"
         }
       },
