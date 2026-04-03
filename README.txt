@@ -76,3 +76,9 @@ v33 polish:
 v34 fix:
 - keeps tray mode active when the initial launched process exits quickly and reattaches to a live game process with the same executable name
 - prevents the launcher from instantly reappearing after launch when BO spins up through a short-lived bootstrap process
+
+
+v35 changes:
+- added -sp as an alias for -zm
+- launch options text updated to the exact wording requested
+- added a short launch guard so campaign/zombies cannot be triggered twice during crash-recovery safe mode popup scenarios
