@@ -48,7 +48,7 @@ spstatsCompressed_ID
 
 And it will replace ID with your PlayerID (aka GameID) and add that to your profile each time you use a new ID. Make sure your files are named with "ID" at the end instead of your actual ID. This way, you no longer have to join a dedicated server or reload your data each time.
 
-https://www.youtube.com/watch?v=iiMyIvHGkDE&t=135s
+https://www.youtube.com/watch?v=iiMyIvHGkDE
 
 <img width="621" height="331" alt="image" src="https://github.com/user-attachments/assets/246bf4f3-482e-49aa-a88d-65620fae2cc2" />
 
