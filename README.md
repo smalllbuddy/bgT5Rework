@@ -16,16 +16,16 @@ Just drag the exe file into either your 0.7 bgt5 black ops folder (recommended) 
 
 # Fixes
 
->127.0.0.1 no longer crashes on multiplayer launch
->Clicking launcher no longer crashes with "Close!" error
->Dedicated server can use bgserver.cfg or server.cfg
->PlayerID is consistent with username unless overwritten
->Launch options (hover over version # to see)
->Hostmode always activates
->Resizable window
->Improved UI
->Minimizes to system tray
->And much more
+-127.0.0.1 no longer crashes on multiplayer launch
+-Clicking launcher no longer crashes with "Close!" error
+-Dedicated server can use bgserver.cfg or server.cfg
+-PlayerID is consistent with username unless overwritten
+-Launch options (hover over version # to see)
+-Hostmode always activates
+-Resizable window
+-Improved UI
+-Minimizes to system tray
+-And much more
 
 # Bonus Features
 
