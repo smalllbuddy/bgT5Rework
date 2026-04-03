@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "DzSlKZAVJEMJb3I56qDHuj2B1JxK0+t2F6Ak5NIs191dPmtsF5g70MpENcZl78C6QFNoh3FypWLBvmuT76u4aQ==",
+  "dgSpecHash": "MBAMZCsTkP6h+Rv2p2Tl0MhQxWRLj6BMGGUz5VS+9lNkV+mzfgbRKWgaOXRXe191uhBEt2RCP/3o75NoTnVSuw==",
   "success": true,
-  "projectFilePath": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v3.2rc7\\bgt5launcher.csproj",
+  "projectFilePath": "C:\\Users\\Spencer\\Downloads\\bgT5Launcher_v3.2rc10\\bgt5launcher.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Spencer\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
     "C:\\Users\\Spencer\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net461\\1.0.3\\microsoft.netframework.referenceassemblies.net461.1.0.3.nupkg.sha512"

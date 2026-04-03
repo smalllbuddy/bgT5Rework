@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -269,7 +270,7 @@ public class MainWindow : Form
         }
     }
 
-    private void WriteConfig(string gameMode, bool hosting)
+    private void WriteConfig(string gameMode, bool hosting, string resolvedHostOverride = null)
     {
         string selectedLocalIp = GetPreferredLocalIPv4();
         string hostInput = textBoxHost.Text.Trim();
@@ -278,13 +279,13 @@ public class MainWindow : Form
             nick = Environment.UserName;
 
         bool useLoopback = hostInput == "127.0.0.1";
-        string effectiveHostIp = useLoopback ? selectedLocalIp : hostInput;
+        string effectiveHostIp = string.IsNullOrWhiteSpace(resolvedHostOverride) ? (useLoopback ? selectedLocalIp : hostInput) : resolvedHostOverride;
         string hostModeValue = hosting ? "1" : "0";
         string gameId = (checkOverrideGameId != null && checkOverrideGameId.Checked) ? textBoxGameId.Text.Trim() : autoGameId;
         if (string.IsNullOrWhiteSpace(gameId) || !Int32.TryParse(gameId, out int gid) || gid < 0)
             gameId = autoGameId;
 
-        string configHost = hostInput;
+        string configHost = effectiveHostIp;
         if (gameMode == "MULTIPLAYER" && useLoopback && !string.IsNullOrWhiteSpace(selectedLocalIp))
             configHost = selectedLocalIp;
 
@@ -413,6 +414,38 @@ public class MainWindow : Form
         }
     }
 
+
+    private string ResolveHostForGameLaunch(bool forMultiplayerOrDedicated)
+    {
+        string hostInput = (this.textBoxHost.Text ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(hostInput))
+            hostInput = "127.0.0.1";
+
+        if (!forMultiplayerOrDedicated)
+            return hostInput;
+
+        if (hostInput == "127.0.0.1")
+        {
+            foreach (Control c in this.ipPanel.Controls)
+            {
+                string txt = c.Text ?? "";
+                Match m = Regex.Match(txt, @"(\d{1,3}(?:\.\d{1,3}){3})");
+                if (m.Success)
+                    return m.Groups[1].Value;
+            }
+
+            string selected = GetIni("Network", "SelectedLocalIp", "");
+            if (!string.IsNullOrWhiteSpace(selected))
+                return selected;
+
+            string hostIp = GetIni("Host", "HostIp", "");
+            if (!string.IsNullOrWhiteSpace(hostIp))
+                return hostIp;
+        }
+
+        return hostInput;
+    }
+
     private void EnsureHostMode()
     {
         try
@@ -492,7 +525,8 @@ public class MainWindow : Form
         launchInProgress = true;
         try
         {
-            WriteConfig(gameMode, true);
+            string resolvedHost = ResolveHostForGameLaunch(gameMode == "MULTIPLAYER");
+            WriteConfig(gameMode, true, resolvedHost);
             if (gameMode == "Singleplayer" || gameMode == "MULTIPLAYER")
                 EnsureProfileTemplateForGameId(GetIni("Config", "GameID", "0"));
             currentGame = Process.Start(exePath);
@@ -592,7 +626,8 @@ public class MainWindow : Form
                 return;
             }
 
-            WriteConfig("Multiplayer", true);
+            string resolvedHost = ResolveHostForGameLaunch(true);
+            WriteConfig("Multiplayer", true, resolvedHost);
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string mainDir = Path.Combine(baseDir, "main");
