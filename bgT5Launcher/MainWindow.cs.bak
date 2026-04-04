@@ -4,9 +4,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Text;
-using System.Reflection;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -33,15 +30,12 @@ public class MainWindow : Form
 
     private readonly string iniPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bgset.ini");
     private readonly Timer processWatch = new Timer();
-    private readonly Timer ambientDigitsTimer = new Timer();
+    private readonly Timer hostEnsure = new Timer();
     private readonly List<Button> ipCopyButtons = new List<Button>();
-    private readonly List<FloatingDigit> ambientDigits = new List<FloatingDigit>();
-    private readonly Random ambientDigitsRandom = new Random();
     private readonly string[] startupArgs;
     private bool startupArgsConsumed;
 
     private Process currentGame;
-    private bool hostModeStarted;
     private NotifyIcon trayIcon;
         private CheckBox checkOverrideGameId;
         private string autoGameId = "0";
@@ -67,62 +61,12 @@ public class MainWindow : Form
     private ToolStripStatusLabel statusIp;
     private ToolStripStatusLabel statusGameId;
     private FlowLayoutPanel ipPanel;
-    private AmbientDigitsPanel ambientLayer;
     private Panel card;
-    private Bitmap ambientBackdropCache;
-
-    protected override CreateParams CreateParams
-    {
-        get
-        {
-            CreateParams cp = base.CreateParams;
-            cp.ExStyle |= 0x02000000;
-            return cp;
-        }
-    }
-
-    private sealed class FloatingDigit
-    {
-        public float X;
-        public float Y;
-        public float Speed;
-        public float Drift;
-        public float FontSize;
-        public int Alpha;
-        public bool IsAccent;
-        public int[] GroupLengths = Array.Empty<int>();
-        public string Text = string.Empty;
-    }
-
-    private sealed class AmbientDigitsPanel : Panel
-    {
-        public Action<Graphics>? PaintDigits;
-
-        public AmbientDigitsPanel()
-        {
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.Opaque, true);
-            UpdateStyles();
-            BackColor = Color.Black;
-            TabStop = false;
-        }
-
-        protected override void OnPaintBackground(PaintEventArgs pevent)
-        {
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            PaintDigits?.Invoke(e.Graphics);
-        }
-    }
 
     public MainWindow(string[] args = null)
     {
         startupArgs = args ?? Array.Empty<string>();
         InitializeComponent();
-        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
-        UpdateStyles();
-        InitializeAmbientDigits();
 
         try
         {
@@ -139,7 +83,7 @@ public class MainWindow : Form
         WireGameIdValidation();
         UpdateResponsiveLayout();
 
-        textBoxHost.Text = GetIni("Network", "TypedHostInput", GetIni("Config", "Host", "127.0.0.1"));
+        textBoxHost.Text = GetIni("Config", "Host", "127.0.0.1");
         if (string.IsNullOrWhiteSpace(textBoxHost.Text))
             textBoxHost.Text = "127.0.0.1";
         textBoxNick.Text = GetIni("Config", "Nickname", Environment.UserName);
@@ -148,22 +92,17 @@ public class MainWindow : Form
         textBoxGameId.Text = GetIni("Config", "GameID", "");
         RefreshGameIdLabel();
         BuildIpButtons();
-        ApplyGameIdUiState();
-        SaveTypedHostInput();
 
         processWatch.Interval = 700;
         processWatch.Tick += ProcessWatch_Tick;
 
+        hostEnsure.Interval = 1200;
+        hostEnsure.Tick += (s, e) => EnsureHostMode();
+
         Shown += (s, e) =>
         {
-            try
-            {
-                StartHostModeOnce();
-            }
-            catch
-            {
-            }
-
+            EnsureHostMode();
+            hostEnsure.Start();
             if (!startupArgsConsumed)
             {
                 startupArgsConsumed = true;
@@ -180,22 +119,6 @@ public class MainWindow : Form
     }
 
     private string GetIni(string section, string key, string fallback = "") => GetIniStatic(section, key, iniPath, fallback);
-
-
-    private void SaveTypedHostInput()
-    {
-        try
-        {
-            string typedHost = (textBoxHost?.Text ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(typedHost))
-                typedHost = "127.0.0.1";
-
-            WritePrivateProfileString("Network", "TypedHostInput", typedHost, iniPath);
-        }
-        catch
-        {
-        }
-    }
 
     private void EnsureGameId()
     {
@@ -384,7 +307,6 @@ public class MainWindow : Form
 
         WritePrivateProfileString("Network", "SelectedLocalIp", selectedLocalIp, iniPath);
         WritePrivateProfileString("Network", "AllowLoopbackForManualConnect", useLoopback ? "1" : "0", iniPath);
-        WritePrivateProfileString("Network", "TypedHostInput", hostInput, iniPath);
 
         statusIp.Text = string.IsNullOrWhiteSpace(selectedLocalIp) ? "No local IPv4" : selectedLocalIp;
         RefreshGameIdLabel();
@@ -466,7 +388,7 @@ public class MainWindow : Form
         if (this.hostStatus == null || this.buttonLoopback == null)
             return;
 
-        bool wrap = this.card.Width < 620;
+        bool wrap = this.card.Width < 720;
 
         this.hostStatus.AutoSize = false;
         this.hostStatus.Location = new Point(
@@ -524,26 +446,21 @@ public class MainWindow : Form
         return hostInput;
     }
 
-    private void StartHostModeOnce()
+    private void EnsureHostMode()
     {
-        if (hostModeStarted)
-            return;
-
         try
         {
             BGT5LMS.Start(3074);
-            hostModeStarted = true;
             hostStatus.ForeColor = Color.FromArgb(170, 230, 170);
             hostStatus.Text = "HOSTMODE ACTIVE";
             ApplyHostStatusLayout();
+            WriteConfig(GetIni("Config", "Game", "Singleplayer"), true);
         }
-        catch (Exception ex)
+        catch
         {
             hostStatus.Text = "HOSTMODE ERROR";
             hostStatus.ForeColor = Color.OrangeRed;
             ApplyHostStatusLayout();
-            MessageBox.Show("Failed to start bgT5lms.\n" + ex.Message, "Hostmode Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            throw;
         }
     }
 
@@ -609,7 +526,7 @@ public class MainWindow : Form
         try
         {
             string resolvedHost = ResolveHostForGameLaunch(gameMode == "MULTIPLAYER");
-            WriteConfig(gameMode, false, resolvedHost);
+            WriteConfig(gameMode, true, resolvedHost);
             if (gameMode == "Singleplayer" || gameMode == "MULTIPLAYER")
                 EnsureProfileTemplateForGameId(GetIni("Config", "GameID", "0"));
             currentGame = Process.Start(exePath);
@@ -700,7 +617,7 @@ public class MainWindow : Form
     {
         try
         {
-            StartHostModeOnce();
+            EnsureHostMode();
 
             string? exePath = FindMpExe();
             if (string.IsNullOrWhiteSpace(exePath))
@@ -710,7 +627,7 @@ public class MainWindow : Form
             }
 
             string resolvedHost = ResolveHostForGameLaunch(true);
-            WriteConfig("MULTIPLAYER", true, resolvedHost);
+            WriteConfig("Multiplayer", true, resolvedHost);
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string mainDir = Path.Combine(baseDir, "main");
@@ -757,14 +674,9 @@ public class MainWindow : Form
 
         foreach (string ip in GetLocalIPv4s())
         {
-            string buttonText = "Copy " + ip;
-            Button b = MakeSmallButton(buttonText);
-            int measured = TextRenderer.MeasureText(buttonText, b.Font).Width;
-            b.Width = Math.Max(116, measured + 16);
+            Button b = MakeSmallButton("Copy " + ip);
+            b.Width = 130;
             b.Height = 24;
-            b.Margin = new Padding(0, 0, 8, 0);
-            b.Padding = new Padding(0);
-            b.TextAlign = ContentAlignment.MiddleCenter;
             b.Click += (s, e) =>
             {
                 try { Clipboard.SetText(ip); } catch { }
@@ -780,7 +692,6 @@ public class MainWindow : Form
             noIp.ForeColor = Color.Gainsboro;
             noIp.BackColor = Color.Transparent;
             noIp.AutoSize = true;
-            noIp.Margin = new Padding(0, 4, 0, 0);
             ipPanel.Controls.Add(noIp);
         }
     }
@@ -794,16 +705,13 @@ public class MainWindow : Form
         b.FlatAppearance.BorderSize = 1;
         b.BackColor = Color.FromArgb(32, 22, 36);
         b.ForeColor = Color.White;
-        b.Font = new Font("Consolas", 8.0f);
-        b.Margin = new Padding(0);
-        b.TextAlign = ContentAlignment.MiddleCenter;
+        b.Font = new Font("Consolas", 8.25f);
         return b;
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
-        try { processWatch.Stop(); ambientDigitsTimer.Stop(); } catch { }
-        try { ambientBackdropCache?.Dispose(); ambientBackdropCache = null; } catch { }
+        try { hostEnsure.Stop(); processWatch.Stop(); } catch { }
         try { if (trayIcon != null) { trayIcon.Visible = false; trayIcon.Dispose(); } } catch { }
         try { BGT5LMS.Stop(); } catch { }
         base.OnFormClosing(e);
@@ -811,350 +719,9 @@ public class MainWindow : Form
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
-        {
-            ambientBackdropCache?.Dispose();
-            if (components != null)
-                components.Dispose();
-        }
+        if (disposing && components != null)
+            components.Dispose();
         base.Dispose(disposing);
-    }
-
-
-    private void UpdateAmbientLayerRegion()
-    {
-        try
-        {
-            if (this.ambientLayer == null || this.card == null || this.card.Width <= 1 || this.card.Height <= 1)
-                return;
-
-            int edgeBand = Math.Max(34, Math.Min(92, Math.Min(this.card.Width, this.card.Height) / 6));
-            Region ring = new Region(new Rectangle(0, 0, this.card.Width, edgeBand));
-            ring.Union(new Rectangle(0, Math.Max(0, this.card.Height - edgeBand), this.card.Width, edgeBand));
-            ring.Union(new Rectangle(0, edgeBand, edgeBand, Math.Max(1, this.card.Height - edgeBand * 2)));
-            ring.Union(new Rectangle(Math.Max(0, this.card.Width - edgeBand), edgeBand, edgeBand, Math.Max(1, this.card.Height - edgeBand * 2)));
-            this.ambientLayer.Region?.Dispose();
-            this.ambientLayer.Region = ring;
-        }
-        catch
-        {
-        }
-    }
-
-    private void InvalidateAmbientEdges()
-    {
-        try
-        {
-            if (this.ambientLayer == null || !this.ambientLayer.IsHandleCreated || this.card == null)
-                return;
-
-            int edgeBand = Math.Max(34, Math.Min(92, Math.Min(this.card.Width, this.card.Height) / 6));
-            this.ambientLayer.Invalidate(new Rectangle(0, 0, this.card.Width, edgeBand + 2));
-            this.ambientLayer.Invalidate(new Rectangle(0, Math.Max(0, this.card.Height - edgeBand - 2), this.card.Width, edgeBand + 2));
-            this.ambientLayer.Invalidate(new Rectangle(0, edgeBand, edgeBand + 2, Math.Max(1, this.card.Height - edgeBand * 2)));
-            this.ambientLayer.Invalidate(new Rectangle(Math.Max(0, this.card.Width - edgeBand - 2), edgeBand, edgeBand + 2, Math.Max(1, this.card.Height - edgeBand * 2)));
-        }
-        catch
-        {
-        }
-    }
-
-    private void InitializeAmbientDigits()
-    {
-        try
-        {
-            typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(this.card, true, null);
-            if (this.ambientLayer != null)
-                this.ambientLayer.PaintDigits = DrawAmbientDigits;
-
-            this.card.Resize += (s, e) =>
-            {
-                EnsureAmbientDigitsFilled();
-                RebuildAmbientBackdropCache();
-                UpdateAmbientLayerRegion();
-                InvalidateAmbientEdges();
-            };
-
-            ambientDigitsTimer.Interval = 30;
-            ambientDigitsTimer.Tick += (s, e) =>
-            {
-                StepAmbientDigits();
-                if (!this.IsDisposed && this.ambientLayer != null && this.ambientLayer.IsHandleCreated && this.Visible && this.WindowState != FormWindowState.Minimized)
-                    InvalidateAmbientEdges();
-            };
-
-            SeedAmbientDigits();
-            RebuildAmbientBackdropCache();
-            UpdateAmbientLayerRegion();
-            ambientDigitsTimer.Start();
-        }
-        catch
-        {
-        }
-    }
-
-    private void SeedAmbientDigits()
-    {
-        ambientDigits.Clear();
-        int target = Math.Max(34, Math.Min(82, Math.Max(1, this.card.Width / 12)));
-        for (int i = 0; i < target; i++)
-            ambientDigits.Add(CreateAmbientDigit(false));
-    }
-
-    private void EnsureAmbientDigitsFilled()
-    {
-        if (this.card == null || this.card.Width <= 0 || this.card.Height <= 0)
-            return;
-
-        int target = Math.Max(34, Math.Min(82, Math.Max(1, this.card.Width / 12)));
-        while (ambientDigits.Count < target)
-            ambientDigits.Add(CreateAmbientDigit(true));
-
-        while (ambientDigits.Count > target && ambientDigits.Count > 0)
-            ambientDigits.RemoveAt(ambientDigits.Count - 1);
-    }
-
-    private string GetAmbientDigitsFontName()
-    {
-        try
-        {
-            string[] candidates = new[] { "Agency FB", "Bahnschrift Condensed", "Arial Narrow", "Consolas" };
-            InstalledFontCollection installed = new InstalledFontCollection();
-            foreach (string family in candidates)
-            {
-                if (installed.Families.Any(f => string.Equals(f.Name, family, StringComparison.OrdinalIgnoreCase)))
-                    return family;
-            }
-        }
-        catch { }
-
-        return "Consolas";
-    }
-
-    private float EstimateAmbientDigitWidth(FloatingDigit digit)
-    {
-        if (digit == null)
-            return 32f;
-
-        int charCount = string.IsNullOrEmpty(digit.Text) ? 1 : digit.Text.Length;
-        float factor = GetAmbientDigitsFontName() == "Consolas" ? 0.72f : 0.58f;
-        return Math.Max(20f, digit.FontSize * factor * charCount + 8f);
-    }
-
-    private FloatingDigit CreateAmbientDigit(bool fromBottom)
-    {
-        int width = Math.Max(120, this.card.Width - 16);
-        int height = Math.Max(120, this.card.Height - 16);
-        int[] pattern = CreateAmbientDigitPattern();
-        bool accent = ambientDigitsRandom.NextDouble() < 0.42;
-        float margin = 28f;
-        float edgeBand = Math.Max(34f, Math.Min(92f, Math.Min(width, height) * 0.20f));
-        int edge = ambientDigitsRandom.Next(0, 4);
-        float x;
-        float y;
-        FloatingDigit digit = new FloatingDigit
-        {
-            Speed = 1.05f + (float)(ambientDigitsRandom.NextDouble() * 1.65),
-            Drift = (float)(ambientDigitsRandom.NextDouble() * 0.56 - 0.28),
-            FontSize = (accent ? 8.4f : 6.9f) + (float)(ambientDigitsRandom.NextDouble() * (accent ? 5.2 : 3.6)),
-            Alpha = accent ? ambientDigitsRandom.Next(64, 102) : ambientDigitsRandom.Next(28, 58),
-            IsAccent = accent,
-            GroupLengths = pattern,
-            Text = CreateAmbientDigitText(pattern)
-        };
-        float textWidth = EstimateAmbientDigitWidth(digit);
-
-        switch (edge)
-        {
-            case 0:
-                x = margin + (float)(ambientDigitsRandom.NextDouble() * Math.Max(40, width - margin * 2 - textWidth));
-                y = fromBottom ? height + ambientDigitsRandom.Next(8, 40) : margin + (float)(ambientDigitsRandom.NextDouble() * edgeBand);
-                break;
-            case 1:
-                x = margin + (float)(ambientDigitsRandom.NextDouble() * Math.Max(40, width - margin * 2 - textWidth));
-                y = height - edgeBand + (float)(ambientDigitsRandom.NextDouble() * Math.Max(12, edgeBand - margin));
-                if (fromBottom) y = height + ambientDigitsRandom.Next(8, 40);
-                break;
-            case 2:
-                x = margin + (float)(ambientDigitsRandom.NextDouble() * Math.Max(12, edgeBand - 10f));
-                y = margin + (float)(ambientDigitsRandom.NextDouble() * Math.Max(40, height - margin * 2));
-                if (fromBottom) y = height + ambientDigitsRandom.Next(8, 40);
-                break;
-            default:
-                x = Math.Max(margin, width - edgeBand + (float)(ambientDigitsRandom.NextDouble() * Math.Max(8, edgeBand - 12f)) - textWidth);
-                y = margin + (float)(ambientDigitsRandom.NextDouble() * Math.Max(40, height - margin * 2));
-                if (fromBottom) y = height + ambientDigitsRandom.Next(8, 40);
-                break;
-        }
-
-        digit.X = Math.Max(margin, Math.Min(width - margin - textWidth, x));
-        digit.Y = y;
-        return digit;
-    }
-
-    private int[] CreateAmbientDigitPattern()
-    {
-        double roll = ambientDigitsRandom.NextDouble();
-        if (roll < 0.50)
-            return new[] { 1 };
-        if (roll < 0.80)
-            return new[] { ambientDigitsRandom.Next(2, 4) };
-        if (roll < 0.96)
-            return new[] { 3 };
-
-        return new[] { ambientDigitsRandom.Next(1, 3), ambientDigitsRandom.Next(1, 3) };
-    }
-
-    private string CreateAmbientDigitText(int[] pattern)
-    {
-        StringBuilder sb = new StringBuilder();
-        for (int g = 0; g < pattern.Length; g++)
-        {
-            for (int i = 0; i < pattern[g]; i++)
-                sb.Append(ambientDigitsRandom.Next(0, 10));
-
-            if (g < pattern.Length - 1)
-                sb.Append(' ');
-        }
-
-        return sb.ToString();
-    }
-
-    private string ScrambleAmbientDigitText(FloatingDigit digit)
-    {
-        if (digit.GroupLengths == null || digit.GroupLengths.Length == 0)
-            digit.GroupLengths = CreateAmbientDigitPattern();
-
-        StringBuilder sb = new StringBuilder();
-        for (int g = 0; g < digit.GroupLengths.Length; g++)
-        {
-            for (int i = 0; i < digit.GroupLengths[g]; i++)
-                sb.Append(ambientDigitsRandom.Next(0, 10));
-
-            if (g < digit.GroupLengths.Length - 1)
-                sb.Append(' ');
-        }
-
-        return sb.ToString();
-    }
-
-    private void StepAmbientDigits()
-    {
-        if (ambientDigits.Count == 0 || this.card == null)
-        {
-            EnsureAmbientDigitsFilled();
-            return;
-        }
-
-        float maxX = Math.Max(80, this.card.Width - 10);
-        float maxY = Math.Max(80, this.card.Height + 36);
-        float margin = 16f;
-        float edgeBand = Math.Max(34f, Math.Min(92f, Math.Min(this.card.Width, this.card.Height) * 0.20f));
-
-        foreach (FloatingDigit digit in ambientDigits)
-        {
-            digit.Y -= digit.Speed;
-            digit.X += digit.Drift;
-            digit.Text = ScrambleAmbientDigitText(digit);
-
-            float textWidth = EstimateAmbientDigitWidth(digit);
-            bool insideCenterX = digit.X > edgeBand && digit.X < this.card.Width - edgeBand - textWidth;
-            bool insideCenterY = digit.Y > edgeBand && digit.Y < this.card.Height - edgeBand - 20;
-            bool outOfBounds = digit.Y < -26 || digit.X < -textWidth || digit.X > maxX || digit.Y > maxY;
-
-            if (outOfBounds || (insideCenterX && insideCenterY))
-            {
-                FloatingDigit reset = CreateAmbientDigit(true);
-                digit.X = reset.X;
-                digit.Y = reset.Y;
-                digit.Speed = reset.Speed;
-                digit.Drift = reset.Drift;
-                digit.FontSize = reset.FontSize;
-                digit.Alpha = reset.Alpha;
-                digit.GroupLengths = reset.GroupLengths;
-                digit.Text = reset.Text;
-            }
-            else
-            {
-                if (digit.X < margin) digit.X = margin;
-                float maxDigitX = Math.Max(margin, this.card.Width - margin - textWidth);
-                if (digit.X > maxDigitX) digit.X = maxDigitX;
-            }
-        }
-    }
-
-    private void RebuildAmbientBackdropCache()
-    {
-        try
-        {
-            if (this.card == null || this.card.Width <= 1 || this.card.Height <= 1)
-                return;
-
-            ambientBackdropCache?.Dispose();
-            ambientBackdropCache = new Bitmap(this.card.Width, this.card.Height);
-            using Graphics g = Graphics.FromImage(ambientBackdropCache);
-            g.SmoothingMode = SmoothingMode.HighSpeed;
-            g.InterpolationMode = InterpolationMode.HighQualityBilinear;
-            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-            if (this.BackgroundImage != null)
-            {
-                Rectangle dest = new Rectangle(0, 0, ambientBackdropCache.Width, ambientBackdropCache.Height);
-                float scaleX = (float)this.BackgroundImage.Width / Math.Max(1, this.ClientSize.Width);
-                float scaleY = (float)this.BackgroundImage.Height / Math.Max(1, this.ClientSize.Height);
-                Rectangle src = new Rectangle(
-                    Math.Max(0, (int)Math.Round(this.card.Left * scaleX)),
-                    Math.Max(0, (int)Math.Round(this.card.Top * scaleY)),
-                    Math.Max(1, (int)Math.Round(this.card.Width * scaleX)),
-                    Math.Max(1, (int)Math.Round(this.card.Height * scaleY)));
-
-                src.Width = Math.Min(src.Width, this.BackgroundImage.Width - src.X);
-                src.Height = Math.Min(src.Height, this.BackgroundImage.Height - src.Y);
-                g.DrawImage(this.BackgroundImage, dest, src, GraphicsUnit.Pixel);
-            }
-            else
-            {
-                g.Clear(Color.FromArgb(14, 14, 14));
-            }
-
-            using SolidBrush overlay = new SolidBrush(this.card.BackColor);
-            g.FillRectangle(overlay, 0, 0, ambientBackdropCache.Width, ambientBackdropCache.Height);
-        }
-        catch
-        {
-        }
-    }
-
-    private void DrawAmbientDigits(Graphics graphics)
-    {
-        if (ambientBackdropCache != null)
-            graphics.DrawImageUnscaled(ambientBackdropCache, 0, 0);
-
-        if (ambientDigits.Count == 0 || this.card == null)
-            return;
-
-        graphics.SmoothingMode = SmoothingMode.HighSpeed;
-        graphics.TextRenderingHint = TextRenderingHint.SingleBitPerPixelGridFit;
-
-        float edgeBand = Math.Max(34f, Math.Min(92f, Math.Min(this.card.Width, this.card.Height) * 0.20f));
-        RectangleF center = new RectangleF(edgeBand, edgeBand, Math.Max(1, this.card.Width - edgeBand * 2), Math.Max(1, this.card.Height - edgeBand * 2));
-
-        foreach (FloatingDigit digit in ambientDigits)
-        {
-            using Font measureFont = new Font(GetAmbientDigitsFontName(), digit.FontSize, FontStyle.Bold, GraphicsUnit.Point);
-            SizeF sz = graphics.MeasureString(digit.Text, measureFont);
-            RectangleF bounds = new RectangleF(digit.X, digit.Y, sz.Width, sz.Height);
-            if (bounds.IntersectsWith(center))
-                continue;
-
-            using Font font = new Font(GetAmbientDigitsFontName(), digit.FontSize, FontStyle.Bold, GraphicsUnit.Point);
-            int shadowAlpha = digit.IsAccent ? Math.Max(10, digit.Alpha / 4) : Math.Max(5, digit.Alpha / 5);
-            using SolidBrush shadowBrush = new SolidBrush(Color.FromArgb(shadowAlpha, 0, 0, 0));
-            using SolidBrush textBrush = new SolidBrush(Color.FromArgb(digit.Alpha, digit.IsAccent ? 124 : 102, digit.IsAccent ? 58 : 44, digit.IsAccent ? 132 : 118));
-
-            graphics.DrawString(digit.Text, font, shadowBrush, digit.X + 1f, digit.Y + 1f);
-            graphics.DrawString(digit.Text, font, textBrush, digit.X, digit.Y);
-        }
     }
 
     private void InitializeComponent()
@@ -1162,7 +729,6 @@ public class MainWindow : Form
         ComponentResourceManager resources = new ComponentResourceManager(typeof(MainWindow));
         this.components = new Container();
         this.card = new Panel();
-        this.ambientLayer = new AmbientDigitsPanel();
         this.startSP = new Button();
         this.startMP = new Button();
         this.startDedi = new Button();
@@ -1191,8 +757,8 @@ public class MainWindow : Form
         this.BackColor = Color.FromArgb(14, 14, 14);
         this.BackgroundImage = Resources.BOlolgo;
         this.BackgroundImageLayout = ImageLayout.Stretch;
-        this.ClientSize = new Size(670, 294);
-        this.MinimumSize = new Size(466, 248);
+        this.ClientSize = new Size(680, 300);
+        this.MinimumSize = new Size(560, 250);
         this.FormBorderStyle = FormBorderStyle.Sizable;
         this.MaximizeBox = true;
         this.MinimizeBox = true;
@@ -1214,13 +780,13 @@ public class MainWindow : Form
         this.labelVersion.BackColor = Color.Transparent;
         this.labelVersion.ForeColor = Color.Gainsboro;
         this.labelVersion.Font = new Font("Consolas", 8.25f);
-        this.labelVersion.Text = "v3.3";
+        this.labelVersion.Text = "v3.2";
         this.labelVersion.Cursor = Cursors.Help;
         this.trayToolTip.SetToolTip(this.labelVersion, GetLaunchOptionsText());
         this.labelVersion.MouseEnter += (s, e) => this.trayToolTip.Show(GetLaunchOptionsText(), this.labelVersion, 0, this.labelVersion.Height + 2, 4000);
         this.labelVersion.MouseLeave += (s, e) => this.trayToolTip.Hide(this.labelVersion);
         this.labelVersion.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-        this.labelVersion.Location = new Point(10, 4);
+        this.labelVersion.Location = new Point(10, 8);
 
 
         this.buttonTray.Text = "◱";
@@ -1244,14 +810,14 @@ public class MainWindow : Form
         this.labelNick.AutoSize = true;
         this.labelNick.BackColor = Color.FromArgb(14,14,14);
         this.labelNick.ForeColor = Color.White;
-        this.labelNick.Font = new Font("Consolas", 7.25f, FontStyle.Bold);
+        this.labelNick.Font = new Font("Consolas", 9.75f);
         this.labelNick.Text = "Nickname:";
-        this.labelNick.Location = new Point(6, 13);
+        this.labelNick.Location = new Point(14, 18);
 
         this.textBoxNick.BackColor = Color.FromArgb(30, 26, 36);
         this.textBoxNick.BorderStyle = BorderStyle.FixedSingle;
         this.textBoxNick.ForeColor = Color.Gainsboro;
-        this.textBoxNick.Location = new Point(58, 18);
+        this.textBoxNick.Location = new Point(100, 18);
         this.textBoxNick.Size = new Size(160, 20);
         this.textBoxNick.TextAlign = HorizontalAlignment.Center;
         this.textBoxNick.TextChanged += (s, e) => { RefreshAutoGameId(); ApplyGameIdUiState(); };
@@ -1259,47 +825,41 @@ public class MainWindow : Form
         this.labelHost.AutoSize = true;
         this.labelHost.BackColor = Color.FromArgb(14,14,14);
         this.labelHost.ForeColor = Color.White;
-        this.labelHost.Font = new Font("Consolas", 7.25f, FontStyle.Bold);
+        this.labelHost.Font = new Font("Consolas", 9.75f);
         this.labelHost.Text = "Host IP:";
-        this.labelHost.Location = new Point(6, 45);
+        this.labelHost.Location = new Point(280, 18);
 
         this.textBoxHost.BackColor = Color.FromArgb(30, 26, 36);
         this.textBoxHost.BorderStyle = BorderStyle.FixedSingle;
         this.textBoxHost.ForeColor = Color.Gainsboro;
-        this.textBoxHost.Location = new Point(58, 50);
-        this.textBoxHost.Size = new Size(160, 20);
+        this.textBoxHost.Location = new Point(350, 18);
+        this.textBoxHost.Size = new Size(170, 20);
         this.textBoxHost.TextAlign = HorizontalAlignment.Center;
-        this.textBoxHost.TextChanged += (s, e) => SaveTypedHostInput();
 
         this.buttonLoopback = MakeSmallButton("127.0.0.1");
         this.buttonLoopback.Location = new Point(this.textBoxHost.Left, this.textBoxHost.Bottom + 6);
         this.buttonLoopback.Click += (s, e) => { textBoxHost.Text = "127.0.0.1"; };
         this.buttonLoopback.Size = new Size(90, 24);
-
         this.labelGameId.AutoSize = true;
         this.labelGameId.BackColor = Color.FromArgb(14,14,14);
-        this.labelGameId.ForeColor = Color.FromArgb(58, 58, 68);
-        this.labelGameId.Font = new Font("Consolas", 6.9f, FontStyle.Bold);
+        this.labelGameId.ForeColor = Color.White;
+        this.labelGameId.Font = new Font("Consolas", 9.75f);
         this.labelGameId.Text = "PlayerID:";
-        this.labelGameId.Location = new Point(478, 18);
+        this.labelGameId.Location = new Point(14, 50);
 
         this.textBoxGameId.BackColor = Color.FromArgb(30, 26, 36);
         this.textBoxGameId.BorderStyle = BorderStyle.FixedSingle;
-        this.textBoxGameId.ForeColor = Color.FromArgb(62, 62, 72);
-        this.textBoxGameId.Location = new Point(540, 18);
-        this.textBoxGameId.Size = new Size(76, 20);
+        this.textBoxGameId.ForeColor = Color.Gainsboro;
+        this.textBoxGameId.Location = new Point(100, 50);
+        this.textBoxGameId.Size = new Size(160, 22);
         this.textBoxGameId.TextAlign = HorizontalAlignment.Center;
 
         this.checkOverrideGameId.Text = "Overwrite";
         this.checkOverrideGameId.AutoSize = true;
         this.checkOverrideGameId.BackColor = Color.FromArgb(14,14,14);
-        this.checkOverrideGameId.ForeColor = Color.FromArgb(70, 70, 80);
-        this.checkOverrideGameId.Location = new Point(this.textBoxGameId.Left - 2, this.textBoxGameId.Bottom + 4);
-        this.checkOverrideGameId.CheckedChanged += (s, e) =>
-        {
-            ApplyGameIdUiState();
-            WritePrivateProfileString("Config", "GameIDOverwrite", this.checkOverrideGameId.Checked ? "1" : "0", iniPath);
-        };
+        this.checkOverrideGameId.ForeColor = Color.Gainsboro;
+        this.checkOverrideGameId.Location = new Point(this.textBoxGameId.Left, this.textBoxGameId.Bottom + 4);
+        this.checkOverrideGameId.CheckedChanged += (s, e) => ApplyGameIdUiState();
 
 
         this.hostStatus.AutoSize = true;
@@ -1307,17 +867,12 @@ public class MainWindow : Form
         this.hostStatus.ForeColor = Color.LightGreen;
         this.hostStatus.Font = new Font("Consolas", 9.75f, FontStyle.Bold);
         this.hostStatus.Text = "HOSTMODE ACTIVE";
-        this.hostStatus.Location = new Point(202, 76);
+        this.hostStatus.Location = new Point(280, 52);
 
         this.ipPanel.BackColor = Color.Transparent;
-        this.ipPanel.Location = new Point(58, 108);
-        this.ipPanel.Size = new Size(640, 28);
+        this.ipPanel.Location = new Point(14, 90);
+        this.ipPanel.Size = new Size(640, 34);
         this.ipPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-        this.ipPanel.FlowDirection = FlowDirection.LeftToRight;
-        this.ipPanel.WrapContents = false;
-        this.ipPanel.Padding = new Padding(0);
-        this.ipPanel.Margin = new Padding(0);
-        this.ipPanel.AutoScroll = false;
 
         this.startSP = CreateLaunchButton("ZOMBIES/CAMPAIGN");
         this.startSP.Location = new Point(14, 142);
@@ -1350,11 +905,6 @@ public class MainWindow : Form
         this.statusGameId.ForeColor = Color.White;
         this.statusGameId.Text = "";
 
-        this.ambientLayer.Location = new Point(0, 0);
-        this.ambientLayer.Size = this.card.Size;
-        this.ambientLayer.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-
-        this.card.Controls.Add(this.ambientLayer);
         this.card.Controls.Add(this.labelVersion);
         this.card.Controls.Add(this.labelNick);
         this.card.Controls.Add(this.textBoxNick);
@@ -1378,8 +928,6 @@ public class MainWindow : Form
 
         this.statusStrip.ResumeLayout(false);
         this.statusStrip.PerformLayout();
-        this.ambientLayer.SendToBack();
-
         this.card.ResumeLayout(false);
         this.card.PerformLayout();
         ResumeLayout(false);
@@ -1407,11 +955,10 @@ public class MainWindow : Form
     private void LayoutCard()
     {
         card.Size = new Size(ClientSize.Width - 20, ClientSize.Height - 20);
-        labelVersion.Location = new Point(10, 4);
-        if (ambientLayer != null) { ambientLayer.Bounds = new Rectangle(0, 0, card.Width, card.Height); UpdateAmbientLayerRegion(); }
+        labelVersion.Location = new Point(10, 8);
         buttonTray.Location = new Point(card.Width - 34, 10);
-        ipPanel.Width = Math.Max(150, card.Width - 120);
-        ipPanel.Location = new Point(54, 104);
+        ipPanel.Width = card.Width - 28;
+        ipPanel.Location = new Point(14, 90);
         statusStrip.Location = new Point(0, card.Height - statusStrip.Height);
         UpdateResponsiveLayout();
     }
@@ -1497,17 +1044,11 @@ private int StableInt32FromString(string s)
                 {
                     this.textBoxGameId.ReadOnly = !enabled;
                     this.textBoxGameId.Enabled = true;
-                                this.textBoxGameId.BackColor = enabled ? Color.FromArgb(24, 24, 28) : Color.FromArgb(28, 25, 31);
-                    this.textBoxGameId.ForeColor = enabled ? Color.FromArgb(118, 118, 128) : Color.FromArgb(32, 32, 40);
+                    this.textBoxGameId.BackColor = enabled ? Color.FromArgb(26,26,30) : Color.FromArgb(38,38,44);
+                    this.textBoxGameId.ForeColor = enabled ? Color.Gainsboro : Color.Gray;
                     if (!enabled)
                         this.textBoxGameId.Text = autoGameId;
                 }
-
-                if (this.labelGameId != null)
-                    this.labelGameId.ForeColor = enabled ? Color.FromArgb(78, 78, 90) : Color.FromArgb(28, 28, 36);
-
-                if (this.checkOverrideGameId != null)
-                    this.checkOverrideGameId.ForeColor = enabled ? Color.FromArgb(82, 82, 92) : Color.FromArgb(30, 30, 38);
             }
             catch { }
         }
@@ -1523,11 +1064,29 @@ private int StableInt32FromString(string s)
     {
         try
         {
-            bool compact = this.ClientSize.Width < 590 || this.ClientSize.Height < 242;
-            bool tiny = this.ClientSize.Width < 548 || this.ClientSize.Height < 228;
-            bool veryTiny = this.ClientSize.Width < 520 || this.ClientSize.Height < 214;
+            bool compact = this.ClientSize.Width < 600 || this.ClientSize.Height < 225;
+            bool tiny = this.ClientSize.Width < 590 || this.ClientSize.Height < 220;
+            bool veryTiny = this.ClientSize.Width < 570 || this.ClientSize.Height < 200;
 
-            this.labelVersion.Location = new Point(8, 4);
+            this.labelVersion.Location = new Point(10, 8);
+
+            if (this.textBoxHost != null && this.buttonLoopback != null)
+            {
+                int hostLeft = this.textBoxHost.Left;
+                int rowRight = this.card.Width - 18;
+                int reservedRight = 150;
+                int hostWidth = Math.Max(120, rowRight - hostLeft - reservedRight);
+                if (compact) hostWidth = Math.Max(110, hostWidth - 20);
+                this.textBoxHost.Width = hostWidth;
+
+                this.buttonLoopback.Size = new Size(compact ? 84 : 90, 24);
+                this.buttonLoopback.Location = new Point(this.textBoxHost.Left, this.textBoxHost.Bottom + 6);
+            }
+
+            ApplyHostStatusLayout();
+
+            if (this.checkOverrideGameId != null && this.textBoxGameId != null)
+                this.checkOverrideGameId.Location = new Point(this.textBoxGameId.Left, this.textBoxGameId.Bottom + 4);
 
             if (this.buttonTray != null)
             {
@@ -1535,92 +1094,16 @@ private int StableInt32FromString(string s)
                 this.buttonTray.BringToFront();
             }
 
-            int leftInputX = veryTiny ? 44 : tiny ? 48 : compact ? 52 : 56;
-            int leftWidth = veryTiny ? 126 : tiny ? 136 : compact ? 148 : 160;
-            int topRowY = 18;
-            int secondRowY = 50;
-            int labelOffsetY = 2;
-
-            if (this.labelNick != null)
-            {
-                this.labelNick.Font = new Font("Consolas", veryTiny ? 5.8f : 6.1f, FontStyle.Bold);
-                this.labelNick.Location = new Point(6, topRowY - labelOffsetY);
-            }
-
-            if (this.textBoxNick != null)
-            {
-                this.textBoxNick.Location = new Point(leftInputX, topRowY);
-                this.textBoxNick.Width = leftWidth;
-            }
-
-            if (this.labelHost != null)
-            {
-                this.labelHost.Font = new Font("Consolas", veryTiny ? 5.8f : 6.1f, FontStyle.Bold);
-                this.labelHost.Location = new Point(6, secondRowY - labelOffsetY);
-            }
-
-            if (this.textBoxHost != null)
-            {
-                this.textBoxHost.Location = new Point(leftInputX, secondRowY);
-                this.textBoxHost.Width = leftWidth;
-            }
-
-            if (this.buttonLoopback != null && this.textBoxHost != null)
-            {
-                this.buttonLoopback.Size = new Size(veryTiny ? 82 : compact ? 88 : 94, 22);
-                this.buttonLoopback.Location = new Point(this.textBoxHost.Left, this.textBoxHost.Bottom + 4);
-            }
-
-            if (this.hostStatus != null && this.buttonLoopback != null)
-            {
-                this.hostStatus.Font = new Font("Consolas", veryTiny ? 8.0f : compact ? 8.4f : 8.8f, FontStyle.Bold);
-                this.hostStatus.Location = new Point(this.buttonLoopback.Right + 8, this.buttonLoopback.Top + 3);
-            }
-
-            int trayLeft = this.buttonTray != null ? this.buttonTray.Left : this.card.Width - 34;
-            int gameIdWidth = veryTiny ? 64 : tiny ? 70 : compact ? 74 : 82;
-            int rightInputX = Math.Max(leftInputX + leftWidth + 122, trayLeft - gameIdWidth - 18);
-            int rightLabelX = Math.Max(rightInputX - 52, trayLeft - gameIdWidth - 78);
-
-            if (this.labelGameId != null)
-            {
-                this.labelGameId.Font = new Font("Consolas", veryTiny ? 5.7f : 6.0f, FontStyle.Bold);
-                this.labelGameId.Location = new Point(rightLabelX, topRowY + 2);
-                this.labelGameId.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            }
-
-            if (this.textBoxGameId != null)
-            {
-                this.textBoxGameId.Location = new Point(rightInputX, topRowY);
-                this.textBoxGameId.Width = gameIdWidth;
-                this.textBoxGameId.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            }
-
-            if (this.checkOverrideGameId != null && this.textBoxGameId != null)
-            {
-                this.checkOverrideGameId.Font = new Font("Consolas", veryTiny ? 6.1f : 6.5f);
-                this.checkOverrideGameId.Location = new Point(this.textBoxGameId.Left - 2, this.textBoxGameId.Bottom + 2);
-                this.checkOverrideGameId.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            }
-
-            if (this.ipPanel != null)
-            {
-                this.ipPanel.Location = new Point(Math.Max(8, leftInputX - 2), this.buttonLoopback.Bottom + 8);
-                this.ipPanel.Width = Math.Max(120, this.card.Width - Math.Max(8, leftInputX - 2) - 18);
-                this.ipPanel.Height = 28;
-            }
-
             if (this.startSP != null && this.startMP != null && this.startDedi != null)
             {
                 int gap = veryTiny ? 6 : tiny ? 8 : compact ? 10 : 12;
-                int bottomMargin = veryTiny ? 7 : tiny ? 9 : compact ? 11 : 14;
-                int available = this.card.Width - 20;
-                int h = veryTiny ? 34 : tiny ? 40 : compact ? 48 : 62;
-                int w = Math.Min(160, Math.Max(86, (available - 2 * gap) / 3));
+                int bottomMargin = veryTiny ? 6 : tiny ? 8 : compact ? 10 : 12;
+                int available = this.card.Width - 28;
+                int h = veryTiny ? 40 : tiny ? 45 : compact ? 55 : 65;
+                int w = Math.Min(160, Math.Max(90, (available - 2 * gap) / 3));
                 int rowWidth = w * 3 + gap * 2;
-                int left = Math.Max(10, (this.card.Width - rowWidth) / 2);
-                int minButtonTop = this.ipPanel.Bottom + 10;
-                int baseY = Math.Max(minButtonTop, this.card.Height - h - bottomMargin);
+                int left = Math.Max(14, (this.card.Width - rowWidth) / 2);
+                int baseY = this.card.Height - h - bottomMargin;
 
                 this.startSP.Size = new Size(w, h);
                 this.startMP.Size = new Size(w, h);
@@ -1630,7 +1113,7 @@ private int StableInt32FromString(string s)
                 this.startMP.Location = new Point(left + w + gap, baseY);
                 this.startDedi.Location = new Point(left + (w + gap) * 2, baseY);
 
-                Font f = new Font("Consolas", veryTiny ? 6.8f : tiny ? 7.25f : compact ? 7.8f : 8.5f, FontStyle.Bold);
+                Font f = new Font("Consolas", veryTiny ? 7.25f : tiny ? 7.75f : compact ? 8.25f : 8.75f, FontStyle.Bold);
                 this.startSP.Font = f;
                 this.startMP.Font = f;
                 this.startDedi.Font = f;
@@ -1638,5 +1121,4 @@ private int StableInt32FromString(string s)
         }
         catch { }
     }
-
 }
