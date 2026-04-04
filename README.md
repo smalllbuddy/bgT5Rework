@@ -1,4 +1,4 @@
-bgT5LauncherReworked v0.3.2
+bgT5LauncherReworked v0.3.3
 
 # What is it?
 
@@ -12,7 +12,7 @@ This launcher fixes all 0.7 exclusive issues, and all issues that weren't fixed 
 
 # How?
 
-Just drag the exe file into either your 0.7 bgt5 black ops folder (recommended) or your 0.1.1 bgt5 black ops folder. This will replace one file, and you can launch everything using the new exe file. (See the youtube video for more help)
+Just drag the exe file into either your 0.7 bgt5 black ops folder (recommended) or your 0.1.1 bgt5 black ops folder. This will replace one file, and you can launch everything using the new exe file.
 
 # Fixes
 
@@ -38,7 +38,9 @@ Just drag the exe file into either your 0.7 bgt5 black ops folder (recommended) 
 
 # Bonus Features
 
-You can add a Template folder in BlackOpsRootDirectory/bgData/ and include:
+You can add a Template folder in BlackOpsRootDirectory/bgData/ (0.7.0)
+or BlackOpsRootDirectory/Profiles/ (0.1.1)
+and include:
 CompressedMetPlayer3.info_ID
 globalstatsCompressed_ID
 mpstatsBasicTraining_ID
@@ -48,11 +50,11 @@ spstatsCompressed_ID
 
 And it will replace ID with your PlayerID (aka GameID) and add that to your profile each time you use a new ID. Make sure your files are named with "ID" at the end instead of your actual ID. This way, you no longer have to join a dedicated server or reload your data each time.
 
-https://www.youtube.com/watch?v=E4sX1Xcf-Ss
-
 <img width="621" height="331" alt="image" src="https://github.com/user-attachments/assets/246bf4f3-482e-49aa-a88d-65620fae2cc2" />
 
 # Changelog
+
+0.3.3L Patches for 0.7, fixed bugs, 0.1.1 now supports Template folder
 
 0.3.2: Support for 0.7, improved UI, gameID support, fixed 127.0.0.1 support, added template system, etc.
 
