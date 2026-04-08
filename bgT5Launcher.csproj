@@ -16,5 +16,14 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <RootNamespace />
   </PropertyGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Reference Include="bgT5lms">
+      <HintPath>lib\bgT5lms.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="bgT5Launcher\BgT5LmsCompat.cs" />
+    <None Include="bgT5Launcher\BgT5LmsCompat.cs" />
+  </ItemGroup>
 </Project>

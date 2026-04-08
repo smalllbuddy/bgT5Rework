@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "mB7S7E5+YXV005yterQcCXTR7p9jtFEa3pvPalS462NLDckcLqn1W1StIqun7PAL9dK75pKScP8try+WECxyzQ==",
+  "dgSpecHash": "2YMCHFTU1ruT8IZgg94Pdufzvo3sho4IFmtfcF1mm99P36F9HVrmnMF967vebT3bFuRFcFv3bSgjT7G5xZJ+0w==",
   "success": true,
-  "projectFilePath": "C:\\Users\\Spencer\\Downloads\\CustomLauncher_v3.3_launcher_source_only\\#Source\\Launcher\\bgt5launcher.csproj",
+  "projectFilePath": "C:\\Games\\Call of Duty Black Ops\\Backup\\bgT5LauncherRework_0.4.0\\AppSource\\bgt5launcher.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Spencer\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
     "C:\\Users\\Spencer\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net461\\1.0.3\\microsoft.netframework.referenceassemblies.net461.1.0.3.nupkg.sha512"
