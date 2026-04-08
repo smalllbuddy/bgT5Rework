@@ -58,7 +58,7 @@ Place your 0.7.0 bgT5lms.dll in lib folder, then build.
 
 # Changelog
 
-0.4.0: Final patch with tested working friends list etc. Strongly recommend using bgt5launcher 0.7. Have fun playing :)
+0.4.1: Final patch with tested working friends list etc. Strongly recommend using bgt5launcher 0.7. Have fun playing :)
 
 0.3.3: Patches for 0.7, fixed bugs, 0.1.1 now supports Template folder
 
