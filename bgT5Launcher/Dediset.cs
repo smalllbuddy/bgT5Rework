@@ -47,8 +47,11 @@ public class Dediset : Form
             return;
         }
 
-        string cfg = File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "server.cfg")) ? "server.cfg" :
-                     File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bgserver.cfg")) ? "bgserver.cfg" :
+        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        string cfg = File.Exists(Path.Combine(baseDir, "main", "bgserver.cfg")) ? "bgserver.cfg" :
+                     File.Exists(Path.Combine(baseDir, "main", "server.cfg")) ? "server.cfg" :
+                     File.Exists(Path.Combine(baseDir, "bgserver.cfg")) ? "bgserver.cfg" :
+                     File.Exists(Path.Combine(baseDir, "server.cfg")) ? "server.cfg" :
                      "server.cfg";
         Process.Start(exe, $"+set dedicated 2 +set sv_licensenum 0 +set net_port 27960 +exec {cfg}");
     }

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Games\\Call of Duty Black Ops\\Backup\\bgT5LauncherRework_0.4.0\\AppSource\\bgt5launcher.csproj": {}
+    "C:\\Users\\Spencer\\Downloads\\bgT5Rework\\bgt5launcher.csproj": {}
   },
   "projects": {
-    "C:\\Games\\Call of Duty Black Ops\\Backup\\bgT5LauncherRework_0.4.0\\AppSource\\bgt5launcher.csproj": {
+    "C:\\Users\\Spencer\\Downloads\\bgT5Rework\\bgt5launcher.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Games\\Call of Duty Black Ops\\Backup\\bgT5LauncherRework_0.4.0\\AppSource\\bgt5launcher.csproj",
+        "projectUniqueName": "C:\\Users\\Spencer\\Downloads\\bgT5Rework\\bgt5launcher.csproj",
         "projectName": "bgT5Launcher",
-        "projectPath": "C:\\Games\\Call of Duty Black Ops\\Backup\\bgT5LauncherRework_0.4.0\\AppSource\\bgt5launcher.csproj",
+        "projectPath": "C:\\Users\\Spencer\\Downloads\\bgT5Rework\\bgt5launcher.csproj",
         "packagesPath": "C:\\Users\\Spencer\\.nuget\\packages\\",
-        "outputPath": "C:\\Games\\Call of Duty Black Ops\\Backup\\bgT5LauncherRework_0.4.0\\AppSource\\obj\\",
+        "outputPath": "C:\\Users\\Spencer\\Downloads\\bgT5Rework\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Spencer\\AppData\\Roaming\\NuGet\\NuGet.Config",
