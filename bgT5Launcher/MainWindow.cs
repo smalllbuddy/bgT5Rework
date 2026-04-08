@@ -393,7 +393,7 @@ public class MainWindow : Form
 
     private string GetLaunchOptionsText()
     {
-        return "Launch options:\n-zm or -sp  Zombies/Campaign\n-mp  Multiplayer\n-server  Dedicated server\n-savedip  use saved Host IP\n-<IP>  override Host IP with a specific IPv4";
+        return "Launch Options\n-zm  Zombies\n-sp  Campaign\n-mp  Multiplayer\n-server  Dedicated Server\n-savedip  Launch with Saved IP\n-[IP]  Launch with Specific IP\nMade by Smalllbuddy";
     }
 
     private static bool TryParseIpArg(string arg, out string ip)
@@ -524,6 +524,24 @@ public class MainWindow : Form
         return hostInput;
     }
 
+    private bool IsLocalOrLoopbackHostTarget()
+    {
+        string hostInput = (this.textBoxHost.Text ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(hostInput) || hostInput == "127.0.0.1")
+            return true;
+
+        if (string.Equals(hostInput, GetPreferredLocalIPv4(), StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        foreach (string ip in GetLocalIPv4s())
+        {
+            if (string.Equals(ip, hostInput, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
     private void StartHostModeOnce()
     {
         if (hostModeStarted)
@@ -600,7 +618,7 @@ public class MainWindow : Form
         Activate();
     }
 
-    private void LaunchGame(string gameMode, string exePath)
+    private void LaunchGame(string gameMode, string exePath, bool hosting = false)
     {
         if (launchInProgress)
             return;
@@ -608,8 +626,13 @@ public class MainWindow : Form
         launchInProgress = true;
         try
         {
+            if (gameMode == "MULTIPLAYER")
+            {
+                try { StartHostModeOnce(); } catch { }
+            }
+
             string resolvedHost = ResolveHostForGameLaunch(gameMode == "MULTIPLAYER");
-            WriteConfig(gameMode, false, resolvedHost);
+            WriteConfig(gameMode, hosting, resolvedHost);
             if (gameMode == "Singleplayer" || gameMode == "MULTIPLAYER")
                 EnsureProfileTemplateForGameId(GetIni("Config", "GameID", "0"));
             currentGame = Process.Start(exePath);
@@ -691,7 +714,8 @@ public class MainWindow : Form
             return;
         }
 
-        LaunchGame("MULTIPLAYER", exe);
+        bool hosting = IsLocalOrLoopbackHostTarget();
+        LaunchGame("MULTIPLAYER", exe, hosting);
     }
 
     
@@ -713,20 +737,21 @@ public class MainWindow : Form
             WriteConfig("MULTIPLAYER", true, resolvedHost);
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string mainDir = Path.Combine(baseDir, "main");
-            string cfgName = "";
+            string cfgPath =
+                File.Exists(Path.Combine(baseDir, "main", "bgserver.cfg")) ? Path.Combine(baseDir, "main", "bgserver.cfg") :
+                File.Exists(Path.Combine(baseDir, "main", "server.cfg")) ? Path.Combine(baseDir, "main", "server.cfg") :
+                File.Exists(Path.Combine(baseDir, "bgserver.cfg")) ? Path.Combine(baseDir, "bgserver.cfg") :
+                File.Exists(Path.Combine(baseDir, "server.cfg")) ? Path.Combine(baseDir, "server.cfg") :
+                "";
 
-            if (File.Exists(Path.Combine(mainDir, "bgserver.cfg")))
-                cfgName = "bgserver.cfg";
-            else if (File.Exists(Path.Combine(mainDir, "server.cfg")))
-                cfgName = "server.cfg";
-            else
+            if (string.IsNullOrWhiteSpace(cfgPath))
             {
-                MessageBox.Show("Server.cfg not found", "Launcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("bgserver.cfg / server.cfg not found.", "Launcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            currentGame = Process.Start(exePath, $"+set dedicated 2 +set sv_licensenum 0 +set net_port 27960 +exec {cfgName}");
+            string cfgArg = cfgPath.Replace(baseDir + Path.DirectorySeparatorChar, "").Replace("\\", "/");
+            currentGame = Process.Start(exePath, $"+set dedicated 2 +set sv_licensenum 0 +set net_port 27960 +exec {cfgArg}");
 
             if (currentGame != null)
                 processWatch.Start();
@@ -1214,7 +1239,7 @@ public class MainWindow : Form
         this.labelVersion.BackColor = Color.Transparent;
         this.labelVersion.ForeColor = Color.Gainsboro;
         this.labelVersion.Font = new Font("Consolas", 8.25f);
-        this.labelVersion.Text = "v3.3";
+        this.labelVersion.Text = "v0.4.0";
         this.labelVersion.Cursor = Cursors.Help;
         this.trayToolTip.SetToolTip(this.labelVersion, GetLaunchOptionsText());
         this.labelVersion.MouseEnter += (s, e) => this.trayToolTip.Show(GetLaunchOptionsText(), this.labelVersion, 0, this.labelVersion.Height + 2, 4000);
