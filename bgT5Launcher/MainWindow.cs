@@ -662,6 +662,28 @@ public class MainWindow : Form
         }
     }
 
+    private static string? ResolveDedicatedCfgExecArg()
+    {
+        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        string mainBgServer = Path.Combine(baseDir, "main", "bgserver.cfg");
+        if (File.Exists(mainBgServer))
+            return "bgserver.cfg";
+
+        string mainServer = Path.Combine(baseDir, "main", "server.cfg");
+        if (File.Exists(mainServer))
+            return "server.cfg";
+
+        string rootBgServer = Path.Combine(baseDir, "bgserver.cfg");
+        if (File.Exists(rootBgServer))
+            return "bgserver.cfg";
+
+        string rootServer = Path.Combine(baseDir, "server.cfg");
+        if (File.Exists(rootServer))
+            return "server.cfg";
+
+        return null;
+    }
+
     private void LaunchDedicated()
     {
         try
@@ -671,15 +693,10 @@ public class MainWindow : Form
             if (exe == null)
                 throw new FileNotFoundException("Could not find the MP executable by expected file size.");
 
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string cfgPath =
-                File.Exists(Path.Combine(baseDir, "main", "bgserver.cfg")) ? Path.Combine(baseDir, "main", "bgserver.cfg") :
-                File.Exists(Path.Combine(baseDir, "main", "server.cfg")) ? Path.Combine(baseDir, "main", "server.cfg") :
-                File.Exists(Path.Combine(baseDir, "bgserver.cfg")) ? Path.Combine(baseDir, "bgserver.cfg") :
-                File.Exists(Path.Combine(baseDir, "server.cfg")) ? Path.Combine(baseDir, "server.cfg") :
-                Path.Combine(baseDir, "main", "bgserver.cfg");
+            string? cfgArg = ResolveDedicatedCfgExecArg();
+            if (string.IsNullOrWhiteSpace(cfgArg))
+                throw new FileNotFoundException("bgserver.cfg / server.cfg not found in main or the game root.");
 
-            string cfgArg = cfgPath.Replace(baseDir + Path.DirectorySeparatorChar, "").Replace("\\", "/");
             currentGame = Process.Start(exe, $"+set dedicated 2 +set sv_licensenum 0 +set net_port 27960 +exec {cfgArg}");
             if (currentGame == null)
                 throw new InvalidOperationException("Could not start dedicated server.");
@@ -736,21 +753,13 @@ public class MainWindow : Form
             string resolvedHost = ResolveHostForGameLaunch(true);
             WriteConfig("MULTIPLAYER", true, resolvedHost);
 
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string cfgPath =
-                File.Exists(Path.Combine(baseDir, "main", "bgserver.cfg")) ? Path.Combine(baseDir, "main", "bgserver.cfg") :
-                File.Exists(Path.Combine(baseDir, "main", "server.cfg")) ? Path.Combine(baseDir, "main", "server.cfg") :
-                File.Exists(Path.Combine(baseDir, "bgserver.cfg")) ? Path.Combine(baseDir, "bgserver.cfg") :
-                File.Exists(Path.Combine(baseDir, "server.cfg")) ? Path.Combine(baseDir, "server.cfg") :
-                "";
-
-            if (string.IsNullOrWhiteSpace(cfgPath))
+            string? cfgArg = ResolveDedicatedCfgExecArg();
+            if (string.IsNullOrWhiteSpace(cfgArg))
             {
-                MessageBox.Show("bgserver.cfg / server.cfg not found.", "Launcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("bgserver.cfg / server.cfg not found in main or the game root.", "Launcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            string cfgArg = cfgPath.Replace(baseDir + Path.DirectorySeparatorChar, "").Replace("\\", "/");
             currentGame = Process.Start(exePath, $"+set dedicated 2 +set sv_licensenum 0 +set net_port 27960 +exec {cfgArg}");
 
             if (currentGame != null)
