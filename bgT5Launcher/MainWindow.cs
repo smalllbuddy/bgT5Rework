@@ -70,6 +70,7 @@ public class MainWindow : Form
     private AmbientDigitsPanel ambientLayer;
     private Panel card;
     private Bitmap ambientBackdropCache;
+    private string ambientDigitsFontName;
 
     protected override CreateParams CreateParams
     {
@@ -589,6 +590,11 @@ public class MainWindow : Form
 
     private void ShowInTray()
     {
+        // The animated overlay is only visible in the launcher window. Stop its
+        // high-frequency timer while the launcher is hidden so it cannot compete
+        // with the game for CPU time or generate background allocations.
+        ambientDigitsTimer.Stop();
+
         if (trayIcon == null)
         {
             trayIcon = new NotifyIcon();
@@ -616,6 +622,9 @@ public class MainWindow : Form
         Show();
         WindowState = FormWindowState.Normal;
         Activate();
+
+        if (!ambientDigitsTimer.Enabled)
+            ambientDigitsTimer.Start();
     }
 
     private void LaunchGame(string gameMode, string exePath, bool hosting = false)
@@ -912,8 +921,11 @@ public class MainWindow : Form
             ambientDigitsTimer.Interval = 30;
             ambientDigitsTimer.Tick += (s, e) =>
             {
+                if (this.IsDisposed || !this.Visible || this.WindowState == FormWindowState.Minimized)
+                    return;
+
                 StepAmbientDigits();
-                if (!this.IsDisposed && this.ambientLayer != null && this.ambientLayer.IsHandleCreated && this.Visible && this.WindowState != FormWindowState.Minimized)
+                if (this.ambientLayer != null && this.ambientLayer.IsHandleCreated)
                     InvalidateAmbientEdges();
             };
 
@@ -950,19 +962,29 @@ public class MainWindow : Form
 
     private string GetAmbientDigitsFontName()
     {
+        if (!string.IsNullOrWhiteSpace(ambientDigitsFontName))
+            return ambientDigitsFontName;
+
+        ambientDigitsFontName = "Consolas";
+
         try
         {
             string[] candidates = new[] { "Agency FB", "Bahnschrift Condensed", "Arial Narrow", "Consolas" };
-            InstalledFontCollection installed = new InstalledFontCollection();
-            foreach (string family in candidates)
+            using (InstalledFontCollection installed = new InstalledFontCollection())
             {
-                if (installed.Families.Any(f => string.Equals(f.Name, family, StringComparison.OrdinalIgnoreCase)))
-                    return family;
+                foreach (string family in candidates)
+                {
+                    if (installed.Families.Any(f => string.Equals(f.Name, family, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        ambientDigitsFontName = family;
+                        break;
+                    }
+                }
             }
         }
         catch { }
 
-        return "Consolas";
+        return ambientDigitsFontName;
     }
 
     private float EstimateAmbientDigitWidth(FloatingDigit digit)
@@ -1248,7 +1270,7 @@ public class MainWindow : Form
         this.labelVersion.BackColor = Color.Transparent;
         this.labelVersion.ForeColor = Color.Gainsboro;
         this.labelVersion.Font = new Font("Consolas", 8.25f);
-        this.labelVersion.Text = "v0.4.1";
+        this.labelVersion.Text = "v0.4.2";
         this.labelVersion.Cursor = Cursors.Help;
         this.trayToolTip.SetToolTip(this.labelVersion, GetLaunchOptionsText());
         this.labelVersion.MouseEnter += (s, e) => this.trayToolTip.Show(GetLaunchOptionsText(), this.labelVersion, 0, this.labelVersion.Height + 2, 4000);

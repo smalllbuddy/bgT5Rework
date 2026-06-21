@@ -1,4 +1,4 @@
-bgT5LauncherReworked v0.4.1
+bgT5LauncherReworked v0.4.2
 
 # What is it?
 
@@ -57,6 +57,17 @@ And it will replace ID with your PlayerID (aka GameID) and add that to your prof
 Place your 0.7.0 bgT5lms.dll in lib folder, then build.
 
 # Changelog
+
+
+
+0.4.2: Fixed hitching issue - Changed file MainWindow.cs
+  1. Stops the animated-number overlay timer whenever the launcher is hidden
+     in the notification tray, including while the game is running.
+  2. Restarts the animation timer when the launcher is restored.
+  3. Adds a visibility guard so hidden/minimized windows cannot update the
+     animation even if the timer is restarted unexpectedly.
+  4. Caches the selected ambient font instead of rebuilding the installed-font
+     collection for every digit on every 30 ms animation tick.
 
 0.4.1: Final patch with tested working friends list etc. Strongly recommend using bgt5launcher 0.7. Have fun playing :)
 
