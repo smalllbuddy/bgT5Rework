@@ -590,11 +590,6 @@ public class MainWindow : Form
 
     private void ShowInTray()
     {
-        // The animated overlay is only visible in the launcher window. Stop its
-        // high-frequency timer while the launcher is hidden so it cannot compete
-        // with the game for CPU time or generate background allocations.
-        ambientDigitsTimer.Stop();
-
         if (trayIcon == null)
         {
             trayIcon = new NotifyIcon();
@@ -622,9 +617,6 @@ public class MainWindow : Form
         Show();
         WindowState = FormWindowState.Normal;
         Activate();
-
-        if (!ambientDigitsTimer.Enabled)
-            ambientDigitsTimer.Start();
     }
 
     private void LaunchGame(string gameMode, string exePath, bool hosting = false)
@@ -921,7 +913,10 @@ public class MainWindow : Form
             ambientDigitsTimer.Interval = 30;
             ambientDigitsTimer.Tick += (s, e) =>
             {
-                if (this.IsDisposed || !this.Visible || this.WindowState == FormWindowState.Minimized)
+                // Keep the original timer lifecycle intact for multiplayer/LMS
+                // compatibility, but do no animation work while a game is running
+                // or while the launcher is hidden/minimized.
+                if (this.IsDisposed || currentGame != null || !this.Visible || this.WindowState == FormWindowState.Minimized)
                     return;
 
                 StepAmbientDigits();
@@ -1270,7 +1265,7 @@ public class MainWindow : Form
         this.labelVersion.BackColor = Color.Transparent;
         this.labelVersion.ForeColor = Color.Gainsboro;
         this.labelVersion.Font = new Font("Consolas", 8.25f);
-        this.labelVersion.Text = "v0.4.2";
+        this.labelVersion.Text = "v0.4.3";
         this.labelVersion.Cursor = Cursors.Help;
         this.trayToolTip.SetToolTip(this.labelVersion, GetLaunchOptionsText());
         this.labelVersion.MouseEnter += (s, e) => this.trayToolTip.Show(GetLaunchOptionsText(), this.labelVersion, 0, this.labelVersion.Height + 2, 4000);

@@ -1,4 +1,4 @@
-bgT5LauncherReworked v0.4.2
+bgT5LauncherReworked v0.4.3
 
 # What is it?
 
@@ -58,16 +58,14 @@ Place your 0.7.0 bgT5lms.dll in lib folder, then build.
 
 # Changelog
 
-
-
-0.4.2: Fixed hitching issue - Changed file MainWindow.cs
-  1. Stops the animated-number overlay timer whenever the launcher is hidden
-     in the notification tray, including while the game is running.
-  2. Restarts the animation timer when the launcher is restored.
-  3. Adds a visibility guard so hidden/minimized windows cannot update the
-     animation even if the timer is restarted unexpectedly.
-  4. Caches the selected ambient font instead of rebuilding the installed-font
-     collection for every digit on every 30 ms animation tick.
+0.4.3: Hitch fix & Final Release
+  1. Multiplayer, host, join, IP, port, config, and LMS logic are unchanged
+  2. The overlay timer remains running as in 0.4.1, but exits immediately while the launcher is hidden, minimized, or a game process is active.
+  3. The ambient overlay font lookup is cached instead of scanning installed fonts repeatedly.
+  4. This also removes launcher UI work during gameplay, which may reduce host-side menu lag without changing networking behavior.
+Have fun!
+  
+0.4.2: Hitch fix attempt - broke LAN connection
 
 0.4.1: Final patch with tested working friends list etc. Strongly recommend using bgt5launcher 0.7. Have fun playing :)
 
