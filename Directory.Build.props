@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <!-- Generated release/package trees may contain full historical source copies.
+         They must never be discovered as source by the root SDK-style project. -->
+    <DefaultItemExcludes>
+      $(DefaultItemExcludes);
+      release\**;
+      packages\**;
+      bgT5lms_source_0.4.4-RC*\bin\**;
+      bgT5lms_source_0.4.4-RC*\obj\**
+    </DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

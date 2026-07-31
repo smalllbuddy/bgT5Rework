@@ -26,4 +26,16 @@
     <Compile Remove="bgT5Launcher\BgT5LmsCompat.cs" />
     <None Include="bgT5Launcher\BgT5LmsCompat.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="bgT5lms_source_0.4.4-RC7\**\*.cs" />
+    <None Include="bgT5lms_source_0.4.4-RC7\**\*.cs" />
+    <Compile Remove="bgT5lms_source_0.4.4-RC8\**\*.cs" />
+    <None Include="bgT5lms_source_0.4.4-RC8\**\*.cs" />
+    <Compile Remove="bgT5lms_source_0.4.4-RC9\**\*.cs" />
+    <None Include="bgT5lms_source_0.4.4-RC9\**\*.cs" />
+    <Compile Remove="bgT5lms_source_0.4.4-RC10\**\*.cs" />
+    <None Include="bgT5lms_source_0.4.4-RC10\**\*.cs" />
+    <Compile Remove=".analysis\**\*.cs" />
+    <None Include=".analysis\**\*.cs" />
+  </ItemGroup>
 </Project>

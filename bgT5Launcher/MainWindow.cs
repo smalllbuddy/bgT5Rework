@@ -46,6 +46,7 @@ public class MainWindow : Form
         private CheckBox checkOverrideGameId;
         private string autoGameId = "0";
     private bool launchInProgress;
+    private bool bgt5FriendsFixWarningShown;
     private IContainer components;
 
     private Button startSP;
@@ -629,6 +630,7 @@ public class MainWindow : Form
         {
             if (gameMode == "MULTIPLAYER")
             {
+                ApplyBgt5FriendsHandleFix();
                 try { StartHostModeOnce(); } catch { }
             }
 
@@ -663,6 +665,30 @@ public class MainWindow : Form
         }
     }
 
+    private void ApplyBgt5FriendsHandleFix()
+    {
+        Bgt5FriendsHandleFix.ApplyResult result =
+            Bgt5FriendsHandleFix.Apply(AppDomain.CurrentDomain.BaseDirectory);
+
+        if ((result == Bgt5FriendsHandleFix.ApplyResult.Missing ||
+             result == Bgt5FriendsHandleFix.ApplyResult.Unsupported) &&
+            !bgt5FriendsFixWarningShown)
+        {
+            bgt5FriendsFixWarningShown = true;
+            string reason = result == Bgt5FriendsHandleFix.ApplyResult.Missing
+                ? "bgt5.dll was not found."
+                : "This bgt5.dll version is not the supported original build.";
+
+            MessageBox.Show(
+                "The 0.4.4 friends-list handle fix was not applied.\n\n" +
+                reason + "\n\n" +
+                "Multiplayer will still launch, but the friends screen may become progressively laggy.",
+                "0.4.4 compatibility warning",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
+    }
+
     private static string? ResolveDedicatedCfgExecArg()
     {
         string baseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -689,6 +715,7 @@ public class MainWindow : Form
     {
         try
         {
+            ApplyBgt5FriendsHandleFix();
             WriteConfig("MULTIPLAYER", true);
             string? exe = FindMpExe();
             if (exe == null)
@@ -742,6 +769,7 @@ public class MainWindow : Form
     {
         try
         {
+            ApplyBgt5FriendsHandleFix();
             StartHostModeOnce();
 
             string? exePath = FindMpExe();
@@ -1265,7 +1293,7 @@ public class MainWindow : Form
         this.labelVersion.BackColor = Color.Transparent;
         this.labelVersion.ForeColor = Color.Gainsboro;
         this.labelVersion.Font = new Font("Consolas", 8.25f);
-        this.labelVersion.Text = "v0.4.3";
+        this.labelVersion.Text = "v0.4.4";
         this.labelVersion.Cursor = Cursors.Help;
         this.trayToolTip.SetToolTip(this.labelVersion, GetLaunchOptionsText());
         this.labelVersion.MouseEnter += (s, e) => this.trayToolTip.Show(GetLaunchOptionsText(), this.labelVersion, 0, this.labelVersion.Height + 2, 4000);

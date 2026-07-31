@@ -1,4 +1,4 @@
-bgT5LauncherReworked v0.4.3
+bgT5LauncherReworked v0.4.4
 
 # What is it?
 
@@ -13,28 +13,6 @@ This launcher fixes all 0.7 exclusive issues, and all issues that weren't fixed 
 # How?
 
 Just drag the exe file into either your 0.7 bgt5 black ops folder (recommended) or your 0.1.1 bgt5 black ops folder. This will replace one file, and you can launch everything using the new exe file.
-
-# Fixes
-
--127.0.0.1 no longer crashes on multiplayer launch
-
--Clicking launcher no longer crashes with "Close!" error
-
--Dedicated server can use bgserver.cfg or server.cfg
-
--PlayerID is consistent with username unless overwritten
-
--Launch options (hover over version # to see)
-
--Hostmode always activates
-
--Resizable window
-
--Improved UI
-
--Minimizes to system tray
-
--And much more
 
 # Bonus Features
 
@@ -54,16 +32,13 @@ And it will replace ID with your PlayerID (aka GameID) and add that to your prof
 
 # Build Instructions
 
-Place your 0.7.0 bgT5lms.dll in lib folder, then build.
+Place your `bgT5lms.dll` in `lib`. Open `bgt5launcher.csproj`, select `Release` / `x86`, and build.
 
 # Changelog
 
-0.4.3: Hitch fix & Final Release
-  1. Multiplayer, host, join, IP, port, config, and LMS logic are unchanged
-  2. The overlay timer remains running as in 0.4.1, but exits immediately while the launcher is hidden, minimized, or a game process is active.
-  3. The ambient overlay font lookup is cached instead of scanning installed fonts repeatedly.
-  4. This also removes launcher UI work during gameplay, which may reduce host-side menu lag without changing networking behavior.
-Have fun!
+0.4.4: Fixes the `bgData/Friends` handle leak that caused progressive multiplayer hitches.
+
+0.4.3: Optimized launcher appearance
   
 0.4.2: Hitch fix attempt - broke LAN connection
 

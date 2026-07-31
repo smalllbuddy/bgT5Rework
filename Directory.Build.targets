@@ -1,0 +1,11 @@
+<Project>
+  <!-- The root project references a prebuilt LMS DLL. Historical nested source
+       trees can contain assemblies with the same identity, so enforce that the
+       runtime output is always the exact file selected in lib. -->
+  <Target Name="CopySelectedLmsRuntime" AfterTargets="Build"
+          Condition="'$(MSBuildProjectName)' == 'bgt5launcher'">
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\lib\bgT5lms.dll"
+          DestinationFiles="$(TargetDir)bgT5lms.dll"
+          SkipUnchangedFiles="false" />
+  </Target>
+</Project>
