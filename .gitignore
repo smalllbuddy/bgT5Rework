@@ -1,0 +1,18 @@
+# Build output: the exe goes in Releases, not in the code
+bin/
+obj/
+
+# Visual Studio and per-user files
+.vs/
+*.user
+*.suo
+
+# bgT5lms.dll is BGamer's file: put your own copy in lib/ (see README)
+lib/*.dll
+
+# Local research folders the .csproj excludes from the build
+bgT5lms_source_*/
+.analysis/
+
+# Settings the launcher writes next to itself
+bgset.ini

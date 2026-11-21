@@ -12,7 +12,7 @@ This launcher fixes all 0.7 exclusive issues, and all issues that weren't fixed 
 
 # How?
 
-Just drag the exe file into either your 0.7 bgt5 black ops folder (recommended) or your 0.1.1 bgt5 black ops folder. This will replace one file, and you can launch everything using the new exe file.
+Just drag the exe file (from [Releases](https://github.com/smalllbuddy/bgT5Rework/releases)) into either your 0.7 bgt5 black ops folder (recommended) or your 0.1.1 bgt5 black ops folder. This will replace one file, and you can launch everything using the new exe file.
 
 # Bonus Features
 
@@ -32,7 +32,11 @@ And it will replace ID with your PlayerID (aka GameID) and add that to your prof
 
 # Build Instructions
 
-Place your `bgT5lms.dll` in `lib`. Open `bgt5launcher.csproj`, select `Release` / `x86`, and build.
+Copy `bgT5lms.dll` from your own bgt5launcher 0.7 install into a `lib` folder next to `bgT5Launcher.csproj`. Open `bgT5Launcher.csproj`, select `Release` / `x86`, and build.
+
+# Credits
+
+bgT5Launcher was made by BGamer (© 2013–2018). This is an unofficial rework of it and isn't affiliated with BGamer. `bgT5lms.dll` belongs to BGamer and isn't included here.
 
 # Changelog
 
